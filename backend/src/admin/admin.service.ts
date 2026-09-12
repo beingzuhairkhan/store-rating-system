@@ -166,159 +166,184 @@ export class AdminService {
 
 
   async listStores(params: {
-  search?: string;
-  name?: string;
-  email?: string;
-  address?: string;
-  sortBy?: string;
-  order?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}) {
-  const {
-    search,
-    name,
-    email,
-    address,
-    sortBy = 'createdAt',
-    order = 'desc',
-    page = 1,
-    limit = 10,
-  } = params;
+    search?: string;
+    name?: string;
+    email?: string;
+    address?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      name,
+      email,
+      address,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 10,
+    } = params;
 
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  const where: Prisma.StoreWhereInput = {};
+    const where: Prisma.StoreWhereInput = {};
 
-  // Global search
-  if (search?.trim()) {
-    const value = search.trim();
+    // Global search
+    if (search?.trim()) {
+      const value = search.trim();
 
-    where.OR = [
-      {
-        name: {
-          contains: value,
-          mode: 'insensitive',
+      where.OR = [
+        {
+          name: {
+            contains: value,
+            mode: 'insensitive',
+          },
         },
-      },
-      {
-        email: {
-          contains: value,
-          mode: 'insensitive',
+        {
+          email: {
+            contains: value,
+            mode: 'insensitive',
+          },
         },
-      },
-      {
-        address: {
-          contains: value,
-          mode: 'insensitive',
+        {
+          address: {
+            contains: value,
+            mode: 'insensitive',
+          },
         },
-      },
-    ];
-  }
+      ];
+    }
 
-  // Individual filters
-  if (name?.trim()) {
-    where.name = {
-      contains: name.trim(),
-      mode: 'insensitive',
+    // Individual filters
+    if (name?.trim()) {
+      where.name = {
+        contains: name.trim(),
+        mode: 'insensitive',
+      };
+    }
+
+    if (email?.trim()) {
+      where.email = {
+        contains: email.trim(),
+        mode: 'insensitive',
+      };
+    }
+
+    if (address?.trim()) {
+      where.address = {
+        contains: address.trim(),
+        mode: 'insensitive',
+      };
+    }
+
+    // Sorting
+    const validSortFields = [
+      'name',
+      'email',
+      'address',
+      'createdAt',
+      'updatedAt',
+    ] as const;
+
+    const safeSortBy = validSortFields.includes(
+      sortBy as (typeof validSortFields)[number],
+    )
+      ? sortBy
+      : 'createdAt';
+
+    const safeSortOrder: 'asc' | 'desc' =
+      sortOrder === 'asc' ? 'asc' : 'desc';
+
+    const orderBy = {
+      [safeSortBy]: safeSortOrder,
+    } as Prisma.StoreOrderByWithRelationInput;
+
+    const [stores, total] = await Promise.all([
+      this.storesService.findAllStores({
+        skip,
+        take: limit,
+        where,
+        orderBy,
+      }),
+
+      this.storesService.count(where),
+    ]);
+
+    const storesWithAvg = await Promise.all(
+      stores.map(async (store) => ({
+        ...store,
+        averageRating:
+          await this.storesService.getStoreAverageRating(store.id),
+      })),
+    );
+
+    return {
+      message: 'Stores retrieved successfully',
+      data: {
+        items: storesWithAvg,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
-
-  if (email?.trim()) {
-    where.email = {
-      contains: email.trim(),
-      mode: 'insensitive',
-    };
-  }
-
-  if (address?.trim()) {
-    where.address = {
-      contains: address.trim(),
-      mode: 'insensitive',
-    };
-  }
-
-  // Sorting
-  const validSortFields = [
-    'name',
-    'email',
-    'address',
-    'createdAt',
-    'updatedAt',
-  ] as const;
-
-  const safeSortBy = validSortFields.includes(
-    sortBy as (typeof validSortFields)[number],
-  )
-    ? sortBy
-    : 'createdAt';
-
-  const safeOrder: 'asc' | 'desc' =
-    order === 'asc' ? 'asc' : 'desc';
-
-  const orderBy = {
-    [safeSortBy]: safeOrder,
-  } as Prisma.StoreOrderByWithRelationInput;
-
-  // Debug
-  console.log('STORE SEARCH:', search);
-  console.log('STORE WHERE:', JSON.stringify(where, null, 2));
-  console.log('STORE ORDER:', orderBy);
-
-  const [stores, total] = await Promise.all([
-    this.storesService.findAllStores({
-      skip,
-      take: limit,
-      where,
-      orderBy,
-    }),
-
-    this.storesService.count(where),
-  ]);
-
-  const storesWithAvg = await Promise.all(
-    stores.map(async (store) => ({
-      ...store,
-      averageRating:
-        await this.storesService.getStoreAverageRating(store.id),
-    })),
-  );
-
-  return {
-    message: 'Stores retrieved successfully',
-
-    data: {
-      items: storesWithAvg,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}
 
 
   async getUserDetails(id: string) {
     const user = await this.usersService.findById(id);
-    if (!user) throw new NotFoundException('User not found');
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     const stores = await this.prisma.store.findMany({
-      where: { ownerId: id },
-      select: { id: true, name: true, email: true, address: true },
+      where: {
+        ownerId: id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+
+        ratings: {
+          select: {
+            rating: true,
+          },
+        },
+      },
     });
 
-    const ratings = await this.prisma.rating.findMany({
-      where: { userId: id },
-      include: {
-        store: { select: { id: true, name: true } },
-      },
+    const storesWithAverage = stores.map((store) => {
+      const ratings = store.ratings.map((r) => r.rating);
+
+      const averageRating =
+        ratings.length > 0
+          ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+          : 0;
+
+      return {
+        id: store.id,
+        name: store.name,
+        email: store.email,
+        address: store.address,
+        averageRating: Number(averageRating.toFixed(1)),
+      };
     });
 
     return {
       message: 'User details retrieved successfully',
-      data: { ...user, stores, ratings },
+      data: {
+        ...user,
+        stores: storesWithAverage,
+      },
     };
   }
+
+
 
   async getStoreDetails(id: string) {
     const store = await this.storesService.findStoreById(id);

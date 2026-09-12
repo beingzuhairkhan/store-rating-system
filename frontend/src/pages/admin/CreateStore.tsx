@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Store as StoreIcon } from 'lucide-react';
 import { createStoreSchema, type CreateStoreInput } from '@/lib/validations';
-import { storesApi, adminUsersApi, getErrorMessage } from '@/services/api';
+import { adminStoresApi, adminUsersApi, getErrorMessage } from '@/services/api';
 import type { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +37,7 @@ export function CreateStore() {
   const onSubmit = async (data: CreateStoreInput) => {
     setServerError('');
     try {
-      await storesApi.create(data);
+      await adminStoresApi.create(data);
       toast('Store created successfully!');
       navigate('/admin/stores');
     } catch (error) {

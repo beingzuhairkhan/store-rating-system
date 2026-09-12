@@ -224,14 +224,14 @@ export const usersApi = {
   getById: (id: string) =>
     api.get(`/users/${id}`),
 
-  create: (data: {
-    name: string;
-    email: string;
-    address: string;
-    password: string;
-    role: string;
-  }) =>
-    api.post('/admin/users', data),
+  // create: (data: {
+  //   name: string;
+  //   email: string;
+  //   address: string;
+  //   password: string;
+  //   role: string;
+  // }) =>
+  //   api.post('/admin/users', data),
 };
 
 
@@ -252,13 +252,12 @@ export const adminUsersApi = {
     api.post('/admin/users', data),
 };
 
-
-export const storesApi = {
+export const adminStoresApi = {
   list: (params: Record<string, unknown>) =>
-    api.get('/stores', { params }),
+    api.get('/admin/stores', { params }),
 
   getById: (id: string) =>
-    api.get(`/stores/${id}`),
+    api.get(`/admin/stores/${id}`),
 
   create: (data: {
     name: string;
@@ -266,7 +265,25 @@ export const storesApi = {
     address: string;
     ownerId: string;
   }) =>
-    api.post('/stores', data),
+    api.post('/admin/stores', data),
+};
+
+
+
+export const storesApi = {
+  list: (params: Record<string, unknown>) =>
+    api.get('/stores', { params }),
+
+  // getById: (id: string) =>
+  //   api.get(`/stores/${id}`),
+
+  // create: (data: {
+  //   name: string;
+  //   email: string;
+  //   address: string;
+  //   ownerId: string;
+  // }) =>
+  //   api.post('/stores', data),
 };
 
 

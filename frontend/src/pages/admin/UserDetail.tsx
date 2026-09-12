@@ -5,12 +5,32 @@ import {
   Mail,
   MapPin,
   Shield,
-  Star,
   Store,
+  Star,
 } from 'lucide-react';
 import { adminUsersApi, getErrorMessage } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner, ErrorState } from '@/components/ui/Feedback';
+import { StarRating } from '@/components/ui/StarRating';
+
+interface StoreDetails {
+  id: string;
+  name: string;
+  email?: string;
+  address?: string;
+  averageRating: number;
+}
+
+interface UserDetails {
+  id: string;
+  name: string;
+  email: string;
+  address?: string;
+  role: 'ADMIN' | 'USER' | 'STORE_OWNER';
+  createdAt: string;
+  updatedAt: string;
+  stores?: StoreDetails[];
+}
 
 export function UserDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +40,7 @@ export function UserDetail() {
     isLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<UserDetails>({
     queryKey: ['user', id],
     queryFn: async () => {
       const res = await adminUsersApi.getById(id!);
@@ -43,6 +63,7 @@ export function UserDetail() {
 
   return (
     <div className="p-6 lg:p-8">
+      {/* Back Button */}
       <Link to="/admin/users">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4" />
@@ -77,6 +98,7 @@ export function UserDetail() {
         </div>
 
         <div className="space-y-4">
+          {/* Email */}
           <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
             <Mail className="h-5 w-5 text-slate-400" />
 
@@ -88,6 +110,7 @@ export function UserDetail() {
             </div>
           </div>
 
+          {/* Address */}
           <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
             <MapPin className="h-5 w-5 text-slate-400" />
 
@@ -99,6 +122,7 @@ export function UserDetail() {
             </div>
           </div>
 
+          {/* Role */}
           <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
             <Shield className="h-5 w-5 text-slate-400" />
 
@@ -110,6 +134,7 @@ export function UserDetail() {
             </div>
           </div>
 
+          {/* Joined */}
           <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
             <div className="h-5 w-5" />
 
@@ -126,6 +151,7 @@ export function UserDetail() {
       {/* Stores */}
       {user.stores && user.stores.length > 0 && (
         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          {/* Header */}
           <div className="mb-5 flex items-center gap-2">
             <Store className="h-5 w-5 text-slate-500" />
 
@@ -138,32 +164,59 @@ export function UserDetail() {
             </span>
           </div>
 
-          <div className="space-y-3">
-            {user.stores.map((store: any) => (
+          {/* 2 Stores Per Row */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {user.stores.map((store) => (
               <div
                 key={store.id}
-                className="rounded-lg border border-slate-100 bg-slate-50 p-4"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:shadow-sm"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-medium text-slate-900">
+                {/* Store Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-semibold text-slate-900">
                       {store.name}
                     </h3>
 
                     {store.email && (
-                      <p className="mt-1 text-sm text-slate-500">
+                      <p className="mt-1 truncate text-sm text-slate-500">
                         {store.email}
                       </p>
                     )}
-
-                    <div className="mt-2 flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-
-                      <p className="text-sm text-slate-600">
-                        {store.address || 'No address provided'}
-                      </p>
-                    </div>
                   </div>
+
+                  {/* Rating */}
+                  <div className="flex shrink-0 items-center gap-1 rounded-full bg-white px-2 py-1 shadow-sm">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+
+                    <span className="text-sm font-semibold text-slate-700">
+                      {store.averageRating > 0
+                        ? store.averageRating.toFixed(1)
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div className="mt-3 flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+
+                  <p className="text-sm text-slate-600">
+                    {store.address || 'No address provided'}
+                  </p>
+                </div>
+
+                {/* Rating Stars */}
+                <div className="mt-4 flex items-center gap-2 border-t border-slate-200 pt-3">
+                  <StarRating
+                    value={store.averageRating}
+                    readOnly
+                    size="sm"
+                  />
+
+                  <span className="text-xs text-slate-500">
+                    Average Rating
+                  </span>
                 </div>
               </div>
             ))}
@@ -171,73 +224,20 @@ export function UserDetail() {
         </div>
       )}
 
-      {/* Ratings */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-2">
-          <Star className="h-5 w-5 text-amber-500" />
+      {/* No Stores */}
+      {(!user.stores || user.stores.length === 0) && (
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <Store className="mx-auto h-10 w-10 text-slate-300" />
 
-          <h2 className="text-lg font-semibold text-slate-900">
-            Store Ratings
+          <h2 className="mt-3 text-sm font-semibold text-slate-900">
+            No Stores
           </h2>
 
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-            {user.ratings?.length ?? 0}
-          </span>
+          <p className="mt-1 text-sm text-slate-500">
+            This user does not have any stores.
+          </p>
         </div>
-
-        {user.ratings && user.ratings.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-2">
-            {user.ratings.map((rating: any) => (
-              <div
-                key={rating.id}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                      Store
-                    </p>
-
-                    <h3 className="mt-1 truncate font-semibold text-slate-900">
-                      {rating.store?.name || 'Unknown Store'}
-                    </h3>
-                  </div>
-
-                  <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                    {rating.rating}/5
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star
-                      key={index}
-                      className={`h-5 w-5 ${
-                        index < rating.rating
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-slate-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <p className="mt-3 text-xs text-slate-400">
-                  Rated on{' '}
-                  {new Date(rating.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg bg-slate-50 py-8 text-center">
-            <Star className="mx-auto h-8 w-8 text-slate-300" />
-
-            <p className="mt-2 text-sm text-slate-500">
-              This user has not submitted any ratings.
-            </p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

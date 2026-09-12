@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import { createUserSchema, type CreateUserInput } from '@/lib/validations';
-import { usersApi, getErrorMessage } from '@/services/api';
+import { adminUsersApi, getErrorMessage } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { FormField, inputClasses } from '@/components/ui/FormField';
@@ -26,7 +26,7 @@ export function CreateUser() {
   const onSubmit = async (data: CreateUserInput) => {
     setServerError('');
     try {
-      await usersApi.create(data);
+      await adminUsersApi.create(data);
       toast('User created successfully!');
       navigate('/admin/users');
     } catch (error) {

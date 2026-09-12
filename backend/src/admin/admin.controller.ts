@@ -67,7 +67,7 @@ export class AdminController {
     @Query('email') email?: string,
     @Query('address') address?: string,
     @Query('sortBy') sortBy?: string,
-    @Query('order') order?: 'asc' | 'desc',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -77,13 +77,11 @@ export class AdminController {
       email,
       address,
       sortBy,
-      order,
+      sortOrder,
       page: Math.max(parseInt(page || '1', 10), 1),
       limit: Math.max(parseInt(limit || '10', 10), 1),
     });
   }
-
-
 
   @Get('users/:id')
   getUserDetails(@Param('id') id: string) {

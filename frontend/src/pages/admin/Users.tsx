@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Users, Plus, Search, Eye } from 'lucide-react';
@@ -6,54 +6,77 @@ import { adminUsersApi, getErrorMessage } from '@/services/api';
 import type { User } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
-import { LoadingSpinner, ErrorState, EmptyState } from '@/components/ui/Feedback';
+import {
+  LoadingSpinner,
+  ErrorState,
+  EmptyState,
+} from '@/components/ui/Feedback';
 import { inputClasses } from '@/components/ui/FormField';
 
 export function AdminUsers() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [order, setOrder] = useState('asc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [search]);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['admin-users', page, search, roleFilter, sortBy, order],
+    queryKey: [
+      'admin-users',
+      page,
+      debouncedSearch,
+      roleFilter,
+      sortBy,
+      sortOrder,
+    ],
+
     queryFn: async () => {
       const res = await adminUsersApi.list({
         page,
-        search,
+        search: debouncedSearch || undefined,
         role: roleFilter || undefined,
         sortBy,
-        order,
+        sortOrder,
       });
 
       return res.data.data;
     },
+
+    placeholderData: (previousData) => previousData,
   });
 
-  // API response:
-  // {
-  //   items: [...],
-  //   total: 2,
-  //   page: 1,
-  //   limit: 10,
-  //   totalPages: 1
-  // }
   const users: User[] = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
 
   const toggleSort = (field: string) => {
+    setPage(1);
+
     if (sortBy === field) {
-      setOrder(order === 'asc' ? 'desc' : 'asc');
+      setSortOrder((current) =>
+        current === 'asc' ? 'desc' : 'asc',
+      );
     } else {
       setSortBy(field);
-      setOrder('asc');
+      setSortOrder('asc');
     }
   };
 
   return (
     <div className="p-6 lg:p-8">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-blue-50 p-2">
@@ -61,8 +84,13 @@ export function AdminUsers() {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-            <p className="text-sm text-slate-500">{total} total users</p>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Users
+            </h1>
+
+            <p className="text-sm text-slate-500">
+              {total} total users
+            </p>
           </div>
         </div>
 
@@ -76,8 +104,9 @@ export function AdminUsers() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
           <input
             type="text"
@@ -91,6 +120,7 @@ export function AdminUsers() {
           />
         </div>
 
+        {/* Role filter */}
         <select
           className={`${inputClasses} sm:w-40`}
           value={roleFilter}
@@ -106,6 +136,7 @@ export function AdminUsers() {
         </select>
       </div>
 
+      {/* Content */}
       {isLoading ? (
         <LoadingSpinner />
       ) : isError ? (
@@ -120,7 +151,7 @@ export function AdminUsers() {
           {/* Desktop table */}
           <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:block">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
                   {[
                     { key: 'name', label: 'Name' },
@@ -130,7 +161,7 @@ export function AdminUsers() {
                   ].map((col) => (
                     <th
                       key={col.key}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 cursor-pointer hover:text-slate-900"
+                      className="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 hover:text-slate-900"
                       onClick={() => toggleSort(col.key)}
                     >
                       <span className="flex items-center gap-1">
@@ -138,7 +169,7 @@ export function AdminUsers() {
 
                         {sortBy === col.key && (
                           <span className="text-blue-600">
-                            {order === 'asc' ? '↑' : '↓'}
+                            {sortOrder === 'asc' ? '↑' : '↓'}
                           </span>
                         )}
                       </span>
@@ -155,7 +186,7 @@ export function AdminUsers() {
                 {users.map((user) => (
                   <tr
                     key={user.id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className="transition-colors hover:bg-slate-50"
                   >
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">
                       {user.name}
@@ -165,7 +196,7 @@ export function AdminUsers() {
                       {user.email}
                     </td>
 
-                    <td className="px-4 py-3 text-sm text-slate-600 max-w-xs truncate">
+                    <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-600">
                       {user.address}
                     </td>
 
@@ -206,15 +237,15 @@ export function AdminUsers() {
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-900 truncate">
+                    <p className="truncate font-medium text-slate-900">
                       {user.name}
                     </p>
 
-                    <p className="text-sm text-slate-500 truncate">
+                    <p className="truncate text-sm text-slate-500">
                       {user.email}
                     </p>
 
-                    <p className="text-sm text-slate-500 truncate mt-1">
+                    <p className="mt-1 truncate text-sm text-slate-500">
                       {user.address}
                     </p>
                   </div>
@@ -246,6 +277,7 @@ export function AdminUsers() {
             ))}
           </div>
 
+          {/* Pagination */}
           <Pagination
             page={page}
             totalPages={totalPages}
