@@ -83,7 +83,6 @@ export class AuthService {
         this.configService.get<string>('JWT_EXPIRES_IN') || '15m',
     });
 
-    // Long-lived refresh token
     const refreshToken = await this.jwtService.signAsync(
       {
         sub: user.id,
@@ -96,7 +95,6 @@ export class AuthService {
       },
     );
 
-    // Store refresh token in Redis
     const refreshPayload =
       await this.jwtService.verifyAsync(refreshToken);
 

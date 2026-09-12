@@ -1,6 +1,5 @@
 # Store Rating System — Frontend
 
-A production-ready React frontend for the Store Rating System, built with Vite, TypeScript, Tailwind CSS, React Router, Axios, React Hook Form, Zod, and TanStack Query.
 
 ## Prerequisites
 
@@ -118,7 +117,6 @@ src/
 
 ## API Integration
 
-The frontend expects the following backend endpoints (adjust paths in `src/services/api.ts` if your backend differs):
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|

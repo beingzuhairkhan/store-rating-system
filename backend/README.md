@@ -1,6 +1,5 @@
 # Store Rating System - Backend
 
-A production-ready NestJS backend for a Store Rating System with JWT authentication, role-based access control, Redis token revocation, and Prisma ORM on PostgreSQL (NeonDB).
 
 ## Tech Stack
 
