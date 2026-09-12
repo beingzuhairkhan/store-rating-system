@@ -4,9 +4,10 @@ A full-stack store rating management application where users can browse stores a
 
 ## Project Links
 
-- Demo: Google Drive Demo Link
-- Frontend: Frontend Deployed Link
-- Backend: Backend Deployed Link
+- Demo: [Google Drive Demo](https://drive.google.com/file/d/19y3Qm_2OCuh6NHHjblGHIqyw2dEyNL5I/view?usp=sharing)
+- Frontend: [Live Frontend](https://store-rating-system-lovat.vercel.app/)
+- Backend: [Live Backend](https://store-rating-system-7wwv.onrender.com)
+
 
 ## Tech Stack
 
