@@ -21,7 +21,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
@@ -61,7 +61,7 @@ export class AuthService {
     };
 
     const token = await this.jwtService.signAsync(payload);
-    return { message: 'Login successful', data: {  token  , user} };
+    return { message: 'Login successful', data: { token, user } };
   }
 
   async logout(token: string) {
@@ -120,4 +120,31 @@ export class AuthService {
       updatedAt: true,
     } as const;
   }
+
+  async health() {
+    let postgres = 'ok';
+    let redis = 'ok';
+
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+    } catch {
+      postgres = 'error';
+    }
+
+    try {
+      await this.redisService.getClient().ping();
+    } catch {
+      redis = 'error';
+    }
+
+    return {
+      postgres,
+      redis,
+      status:
+        postgres === 'ok' && redis === 'ok'
+          ? 'ok'
+          : 'error',
+    };
+  }
+
 }

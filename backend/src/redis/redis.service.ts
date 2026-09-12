@@ -8,7 +8,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private logger = new Logger('Redis');
   private readonly PREFIX = 'blacklist:';
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   onModuleInit() {
     const url = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
@@ -29,5 +29,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async isBlacklisted(token: string): Promise<boolean> {
     const result = await this.redis.get(this.PREFIX + token);
     return result !== null;
+  }
+
+  getClient(): Redis {
+    return this.redis;
   }
 }

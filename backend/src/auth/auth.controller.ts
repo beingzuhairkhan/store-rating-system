@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -32,5 +32,11 @@ export class AuthController {
   @Post('password')
   updatePassword(@CurrentUser() user: { sub: string }, @Body() dto: UpdatePasswordDto) {
     return this.authService.updatePassword(user.sub, dto);
+  }
+
+   @Public()
+  @Get('health')
+  health() {
+    return this.authService.health();
   }
 }
