@@ -307,8 +307,22 @@ export const adminApi = {
 
 
 export const ownerApi = {
-  dashboard: () =>
-    api.get('/store-owner/store'),
+  dashboard: (params?: {
+    search?: string;
+    name?: string;
+    email?: string;
+    address?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) =>
+    api.get('/store-owner/store', {
+      params,
+    }),
+
+  getById: (id: string) =>
+    api.get(`/store-owner/store/${id}`),  
 };
 
 

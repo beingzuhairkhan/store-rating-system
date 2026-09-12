@@ -10,7 +10,7 @@ import { UpdateRatingDto } from './dto/update-rating.dto';
 
 @Injectable()
 export class RatingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createOrUpdateRating(userId: string, dto: CreateRatingDto) {
     const store = await this.prisma.store.findUnique({
@@ -42,21 +42,41 @@ export class RatingsService {
     return { message: 'Rating created successfully', data: rating };
   }
 
-  async updateRating(userId: string, ratingId: string, dto: UpdateRatingDto) {
+  async updateRating(
+    userId: string,
+    storeId: string,
+    dto: UpdateRatingDto,
+  ) {
     const rating = await this.prisma.rating.findUnique({
-      where: { id: ratingId },
+      where: {
+        userId_storeId: {
+          userId,
+          storeId,
+        },
+      },
     });
-    if (!rating) throw new NotFoundException('Rating not found');
-    if (rating.userId !== userId) {
-      throw new ForbiddenException('You can only update your own ratings');
+
+    if (!rating) {
+      throw new NotFoundException(
+        'You have not rated this store yet',
+      );
     }
 
     const updated = await this.prisma.rating.update({
-      where: { id: ratingId },
-      data: { rating: dto.rating },
+      where: {
+        id: rating.id,
+      },
+      data: {
+        rating: dto.rating,
+      },
     });
-    return { message: 'Rating updated successfully', data: updated };
+
+    return {
+      message: 'Rating updated successfully',
+      data: updated,
+    };
   }
+
 
   async getUserRatingForStore(userId: string, storeId: string) {
     return this.prisma.rating.findUnique({

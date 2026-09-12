@@ -17,6 +17,7 @@ import { StoreDetail } from '@/pages/admin/StoreDetail';
 import { CreateStore } from '@/pages/admin/CreateStore';
 import { UserStores } from '@/pages/user/Stores';
 import { OwnerDashboard } from '@/pages/owner/Dashboard';
+import { OwnerStoreDetail } from '@/pages/owner/OwnerStoreById';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,15 @@ export default function App() {
                   element={
                     <ProtectedRoute roles={['STORE_OWNER']}>
                       <OwnerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/owner/stores/:id"
+                  element={
+                    <ProtectedRoute roles={['STORE_OWNER']}>
+                      <OwnerStoreDetail />
                     </ProtectedRoute>
                   }
                 />

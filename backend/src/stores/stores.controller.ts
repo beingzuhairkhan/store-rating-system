@@ -9,15 +9,17 @@ import {
 import { StoresService } from './stores.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('stores')
 export class StoresController {
-  constructor(private storesService: StoresService) {}
+  constructor(private storesService: StoresService) { }
 
   @Roles(Role.USER, Role.ADMIN)
   @Get()
   async findAll(
+    @CurrentUser() user: { sub: string },
     @Query('name') name?: string,
     @Query('address') address?: string,
     @Query('sortBy') sortBy: string = 'createdAt',
@@ -25,36 +27,63 @@ export class StoresController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNum = parseInt(page || '1', 10);
-    const limitNum = parseInt(limit || '10', 10);
+    const pageNum = Math.max(parseInt(page || '1', 10), 1);
+    const limitNum = Math.max(parseInt(limit || '10', 10), 1);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: Record<string, unknown> = {};
-    if (name) where.name = { contains: name, mode: 'insensitive' };
-    if (address) where.address = { contains: address, mode: 'insensitive' };
+    const where: Prisma.StoreWhereInput = {};
 
-    const validSortFields = ['name', 'address', 'createdAt', 'updatedAt'];
-    const orderBy: Record<string, 'asc' | 'desc'> = {
+    if (name?.trim()) {
+      where.name = {
+        contains: name.trim(),
+        mode: 'insensitive',
+      };
+    }
+
+    if (address?.trim()) {
+      where.address = {
+        contains: address.trim(),
+        mode: 'insensitive',
+      };
+    }
+
+    const validSortFields = [
+      'name',
+      'address',
+      'createdAt',
+      'updatedAt',
+    ];
+
+    const orderBy = {
       [validSortFields.includes(sortBy) ? sortBy : 'createdAt']:
         sortOrder === 'asc' ? 'asc' : 'desc',
-    };
+    } as Prisma.StoreOrderByWithRelationInput;
 
     const [stores, total] = await Promise.all([
-      this.storesService.findAllStores({ skip, take: limitNum, where, orderBy }),
+      this.storesService.findAllStores({
+        skip,
+        take: limitNum,
+        where,
+        orderBy,
+        userId: user.sub,
+      }),
+
       this.storesService.count(where),
     ]);
 
-    const storesWithAvg = await Promise.all(
-      stores.map(async (s) => ({
-        ...s,
-        averageRating: await this.storesService.getStoreAverageRating(s.id),
+    const storesWithRating = await Promise.all(
+      stores.map(async (store) => ({
+        ...store,
+        averageRating: await this.storesService.getStoreAverageRating(
+          store.id,
+        ),
       })),
     );
 
     return {
       message: 'Stores retrieved successfully',
       data: {
-        items: storesWithAvg,
+        items: storesWithRating,
         total,
         page: pageNum,
         limit: limitNum,
@@ -62,6 +91,7 @@ export class StoresController {
       },
     };
   }
+
 
   @Roles(Role.USER, Role.ADMIN)
   @Get(':id')

@@ -26,6 +26,7 @@ export class RatingsController {
     @Param('id') id: string,
     @Body() dto: UpdateRatingDto,
   ) {
+    console.log('Updating rating with ID:', id, 'for user:', user.sub, 'with data:', dto);
     return this.ratingsService.updateRating(user.sub, id, dto);
   }
 
