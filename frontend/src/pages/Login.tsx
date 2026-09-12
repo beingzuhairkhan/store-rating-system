@@ -28,8 +28,13 @@ export function Login() {
     setServerError('');
     try {
       const res = await authApi.login(data.email, data.password);
-      const { token, user } = res.data.data;
-      login(token, user);
+      const {
+        accessToken,
+        refreshToken,
+        user,
+      } = res.data.data;
+
+      login(accessToken, refreshToken, user);
       toast(`Welcome back, ${user.name}!`);
       navigate(getHomeRoute(user.role), { replace: true });
     } catch (error) {

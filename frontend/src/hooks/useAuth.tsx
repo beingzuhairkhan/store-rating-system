@@ -1,21 +1,49 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
 import type { AuthUser, Role } from '@/types';
 import { authApi } from '@/services/api';
 
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
-  login: (token: string, user: AuthUser) => void;
+  refreshToken: string | null;
+
+  login: (
+    accessToken: string,
+    refreshToken: string,
+    user: AuthUser,
+  ) => void;
+
   logout: () => void;
+
   hasRole: (roles: Role[]) => boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(
+  undefined,
+);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem('token'),
+  );
+
+  const [refreshToken, setRefreshToken] = useState<string | null>(
+    () => localStorage.getItem('refreshToken'),
+  );
+
   const [user, setUser] = useState<AuthUser | null>(() => {
     const stored = localStorage.getItem('user');
+
     if (stored) {
       try {
         return JSON.parse(stored) as AuthUser;
@@ -23,26 +51,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
     }
+
     return null;
   });
 
-  const login = useCallback((newToken: string, newUser: AuthUser) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
-  }, []);
+  const login = useCallback(
+    (
+      newAccessToken: string,
+      newRefreshToken: string,
+      newUser: AuthUser,
+    ) => {
+      localStorage.setItem('token', newAccessToken);
+      localStorage.setItem('refreshToken', newRefreshToken);
+      localStorage.setItem('user', JSON.stringify(newUser));
 
-    const logout = useCallback(async () => {
+      setToken(newAccessToken);
+      setRefreshToken(newRefreshToken);
+      setUser(newUser);
+    },
+    [],
+  );
+
+  const logout = useCallback(async () => {
     try {
       await authApi.logout();
     } catch (error) {
       console.error('Logout API failed:', error);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
 
       setToken(null);
+      setRefreshToken(null);
       setUser(null);
     }
   }, []);
@@ -50,13 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRole = useCallback(
     (roles: Role[]) => {
       if (!user) return false;
+
       return roles.includes(user.role);
     },
-    [user]
+    [user],
   );
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, hasRole }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        refreshToken,
+        login,
+        logout,
+        hasRole,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -64,7 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+
+  if (!ctx) {
+    throw new Error(
+      'useAuth must be used within AuthProvider',
+    );
+  }
+
   return ctx;
 }
 
@@ -72,8 +129,10 @@ export function getHomeRoute(role: Role): string {
   switch (role) {
     case 'ADMIN':
       return '/admin';
+
     case 'STORE_OWNER':
       return '/owner/dashboard';
+
     case 'USER':
     default:
       return '/user/stores';

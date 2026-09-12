@@ -6,10 +6,11 @@ import { LoginDto } from './dto/login.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Public()
   @Post('register')
@@ -23,6 +24,12 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Public()
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.refreshToken);
+  }
+
   @Post('logout')
   logout(@Req() req: Request) {
     const token = req.headers.authorization?.split(' ')[1];
@@ -34,7 +41,7 @@ export class AuthController {
     return this.authService.updatePassword(user.sub, dto);
   }
 
-   @Public()
+  @Public()
   @Get('health')
   health() {
     return this.authService.health();
